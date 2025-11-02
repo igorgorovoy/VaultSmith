@@ -270,6 +270,7 @@ MIT License - see `LICENSE` file for details.
 - Always **delete original CSV files** after encryption
 - Use **strong passwords** (16+ characters)
 - **Regularly update** dependencies
+- **Compatibility Note**: VaultSmith creates databases in KDBX 4.0 format. You need **KeePassXC** (or another modern KDBX 4 client) to open them. Older KeePass versions may not support these files.
 
 ---
 

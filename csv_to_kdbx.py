@@ -2,17 +2,17 @@
 """
 csv_to_kdbx.py
 
-Конвертує CSV (експорт Firefox Logins) -> KeePass .kdbx
+Converts CSV (Firefox Logins export) -> KeePass .kdbx
 
 Usage:
     python csv_to_kdbx.py firefox_export.csv output.kdbx
 
 Options:
-    --db-password PASSWORD      : вказати пароль БД як аргумент (не рекомендовано через історію shell)
-    --keyfile PATH             : додати keyfile та зберегти її поряд з .kdbx
-    --group-by-domain          : створювати підгрупи за доменом (example.com)
-    --title-field FIELD        : який стовпець використовувати як заголовок (за замовчуванням URL)
-    --format firefox           : формат CSV, очікується стандарт експорту Firefox (url,username,password,...)
+    --db-password PASSWORD      : specify DB password as argument (not recommended due to shell history)
+    --keyfile PATH             : add keyfile and save it alongside .kdbx
+    --group-by-domain          : create subgroups by domain (example.com)
+    --title-field FIELD        : which CSV column to use as title (default: url)
+    --format firefox           : CSV format, expects Firefox export standard (url,username,password,...)
 """
 import csv
 import sys
@@ -24,14 +24,14 @@ from urllib.parse import urlparse
 from pykeepass import PyKeePass, create_database
 from datetime import datetime, UTC
 
-# Якщо у тебе проблеми з pykeepass (залежності), встанови: pip install pykeepass
-# pykeepass використовує libs для роботи з KDBX форматами; зазвичай працює "з коробки".
+# If you have issues with pykeepass (dependencies), install: pip install pykeepass
+# pykeepass uses libs to work with KDBX formats; usually works "out of the box".
 
 def domain_from_url(url: str) -> str:
     try:
         p = urlparse(url)
         host = p.hostname or url
-        # прибрати "www."
+        # remove "www."
         return re.sub(r'^www\.', '', host, flags=re.IGNORECASE)
     except Exception:
         return url
@@ -99,7 +99,7 @@ def main():
     # We'll use title = args.title_field (default url) but try nicer titles like domain or url if missing
     root_group = kp.root_group
     
-    # Словник для відстеження дублікатів заголовків у кожній групі
+    # Dictionary to track duplicate titles in each group
     title_counts = {}
 
     for r in entries:
@@ -125,8 +125,8 @@ def main():
         else:
             group = root_group
 
-        # Обробка дублікатів заголовків
-        # Створюємо ключ на основі групи та базового заголовка
+        # Handle duplicate titles
+        # Create key based on group and base title
         group_key = f"{group.name if group != root_group else 'root'}:{title_raw}"
         
         if group_key not in title_counts:
@@ -134,7 +134,7 @@ def main():
         else:
             title_counts[group_key] += 1
         
-        # Якщо це не перший запис з таким заголовком, додаємо суфікс
+        # If this is not the first entry with this title, add a suffix
         if title_counts[group_key] > 0:
             title = f"{title_raw} ({title_counts[group_key]})"
         else:
