@@ -22,7 +22,7 @@ import os
 import re
 from urllib.parse import urlparse
 from pykeepass import PyKeePass, create_database
-from datetime import datetime
+from datetime import datetime, UTC
 
 # Якщо у тебе проблеми з pykeepass (залежності), встанови: pip install pykeepass
 # pykeepass використовує libs для роботи з KDBX форматами; зазвичай працює "з коробки".
@@ -98,6 +98,9 @@ def main():
     # Firefox CSV often: url,username,password,httpRealm,guid,notes
     # We'll use title = args.title_field (default url) but try nicer titles like domain or url if missing
     root_group = kp.root_group
+    
+    # Словник для відстеження дублікатів заголовків у кожній групі
+    title_counts = {}
 
     for r in entries:
         url = r.get('url') or r.get('URL') or ''
@@ -106,9 +109,7 @@ def main():
         notes = r.get('notes') or ''
         title_raw = r.get(args.title_field) or url or username
         if not title_raw:
-            title = 'Login'
-        else:
-            title = title_raw
+            title_raw = 'Login'
 
         if args.group_by_domain and url:
             dom = domain_from_url(url)
@@ -124,6 +125,21 @@ def main():
         else:
             group = root_group
 
+        # Обробка дублікатів заголовків
+        # Створюємо ключ на основі групи та базового заголовка
+        group_key = f"{group.name if group != root_group else 'root'}:{title_raw}"
+        
+        if group_key not in title_counts:
+            title_counts[group_key] = 0
+        else:
+            title_counts[group_key] += 1
+        
+        # Якщо це не перший запис з таким заголовком, додаємо суфікс
+        if title_counts[group_key] > 0:
+            title = f"{title_raw} ({title_counts[group_key]})"
+        else:
+            title = title_raw
+
         # create entry
         try:
             kp.add_entry(group, title, username, password_field, url=url, notes=notes)
@@ -134,7 +150,7 @@ def main():
     kp.save()
     print("Saved KeePass DB:", args.kdbx_out)
     print("Entries added:", len(entries))
-    print("Created:", datetime.utcnow().isoformat() + "Z")
+    print("Created:", datetime.now(UTC).isoformat() + "Z")
 
 if __name__ == '__main__':
     main()
